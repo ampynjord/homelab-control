@@ -94,6 +94,24 @@ fn run_inner(ctx: &Ctx, name: &str, args: &Value, from_agent: bool) -> Result<Ou
             r.map_err(|e| e.to_string())?;
             out(format!("Reveil envoye a {name} via le Pi."), json!({"sent": true, "machine": name}))
         }
+        "update" => {
+            use c2c_core::update::{install, is_newer, latest, DEFAULT_REPO, VERSION};
+            let runner = SystemRunner;
+            let rel = latest(&runner, DEFAULT_REPO)?;
+            let newer = is_newer(VERSION, &rel.tag)?;
+            let data = json!({"current": VERSION, "latest": rel.tag, "update_available": newer});
+            if !newer {
+                return out(format!("A jour : version {VERSION} (derniere release {}).", rel.tag), data);
+            }
+            if !flag(args, "execute") {
+                return out(format!("Mise a jour disponible : {VERSION} -> {}. Ajouter --execute pour l installer.", rel.tag), data);
+            }
+            let dir = std::env::current_exe().map_err(|e| e.to_string())?.parent().map(PathBuf::from).ok_or("dossier de l executable introuvable")?;
+            let r = install(&runner, DEFAULT_REPO, &rel, &dir);
+            log(ctx.actor, "update", &rel.tag, if r.is_ok() { "ok" } else { "echec" }, &format!("de={VERSION}"))?;
+            let done = r?;
+            out(format!("Installe {} : {}. Relancer C2C (et l agent / la surveillance) pour utiliser la nouvelle version.", rel.tag, done.join(", ")), json!({"current": VERSION, "latest": rel.tag, "update_available": false, "installed": done}))
+        }
         "agent-key" => {
             let cfg = load(&ctx.config)?;
             let path = cfg.agent.host_key.clone().map(PathBuf::from).unwrap_or_else(|| c2c_core::hostkey::path_for(&ctx.config));

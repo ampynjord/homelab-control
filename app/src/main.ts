@@ -20,6 +20,7 @@ const state = {
   statuses: {} as Record<string, string>, // derniere etat connu de chaque machine (online / offline / unknown)
   history: {} as Record<string, string[]>, // echantillons recents (o = en ligne, x = hors ligne), conserves entre deux ouvertures
   lastPoll: 0,
+  update: null as { current: string; latest: string; update_available: boolean } | null, // derniere verification des releases GitHub
 };
 const HISTORY_MAX = 90;
 const POLL_MS = 30_000; // sondage de l'etat des machines (statut Tailscale : aucun secret)
@@ -199,6 +200,19 @@ async function wakeMachine(name: string) {
   try { const o = await run("wake", { name, execute: true }); toast(o.ok ? `Réveil envoyé à ${name}` : `Réveil de ${name} : résultat négatif`, o.ok ? "ok" : "ko"); } catch (e) { toast(errText(e), "ko"); }
 }
 
+// ---------- mises a jour (releases GitHub, verifiees par empreinte SHA-256 avant installation) ----------
+async function checkUpdate(): Promise<void> {
+  try { state.update = (await run("update")).data; } catch { return; /* hors ligne : on reessaiera */ }
+  if (state.page === "overview") render();
+}
+async function installUpdate() {
+  if (!(await confirmDialog("Mettre à jour C2C", `Installer ${state.update?.latest} à la place de ${state.update?.current} ? Les fichiers sont vérifiés (SHA-256) avant remplacement ; relance ensuite l'application.`, false, "Installer"))) return;
+  try {
+    const o = await runGuarded("update", { execute: true }, "Installer la mise à jour de C2C");
+    if (o) { toast(o.text, o.ok ? "ok" : "ko"); await checkUpdate(); render(); }
+  } catch (e) { toast(errText(e), "ko"); }
+}
+
 // ---------- vue d'ensemble ----------
 function overviewPage(): HTMLElement[] {
   const kpis = h("div", { class: "kpis" });
@@ -355,9 +369,11 @@ function render() {
     h("div", { class: "sect" }, "Outils"),
     item("commands", "Toutes les commandes"), item("journal", "Journal"),
     h("span", { class: "spacer" }),
+    h("div", { class: "live", style: "margin:0 10px 6px" }, `Version ${state.update?.current ?? ""}`),
     h("button", { class: "nav-item", onclick: () => { setTheme(currentTheme() === "dark" ? "light" : "dark"); render(); } }, h("span", { class: "grow" }, currentTheme() === "dark" ? "Thème clair" : "Thème sombre")));
   const content = h("div", { class: "content" });
   if (!state.info.config_ok) content.append(h("div", { class: "banner" }, `Configuration illisible (${state.info.config}) : ${state.info.config_error}`));
+  if (state.update?.update_available) content.append(h("div", { class: "banner row between" }, h("span", {}, `Mise à jour disponible : ${state.update.current} → ${state.update.latest}`), h("button", { class: "btn primary small", onclick: () => void installUpdate() }, "Installer")));
   if (state.page === "overview") content.append(...overviewPage());
   else if (state.page === "local") content.append(...machinePage(null));
   else if (state.page.startsWith("m:")) content.append(...machinePage(state.machines.find((m) => "m:" + m.name === state.page) ?? null));
@@ -388,6 +404,8 @@ async function boot() {
     if (state.info.client_name) state.machine = state.machines.find((m) => m.agent)?.name ?? "";
   } catch (e) { document.getElementById("app")!.textContent = "Erreur au démarrage : " + errText(e); return; }
   render();
+  void checkUpdate();
+  window.setInterval(() => void checkUpdate(), 6 * 3600_000);
   // Sondage de fond : meme hors de la vue d'ensemble, pour l'historique, les pastilles et les notifications.
   window.setInterval(() => { if (!document.hidden && state.page !== "overview") void pollStatus().catch(() => undefined); }, POLL_MS);
   if (state.page !== "overview") void pollStatus().catch(() => undefined);

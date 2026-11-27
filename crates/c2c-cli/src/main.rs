@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 #[derive(Parser)]
-#[command(name = "c2c", about = "Centre de controle du homelab")]
+#[command(name = "c2c", about = "Centre de controle du homelab", version = c2c_core::update::VERSION)]
 struct Cli {
     #[arg(long, default_value = "c2c.toml")]
     config: PathBuf,
@@ -53,6 +53,11 @@ enum Cmd {
     /// Reveille une machine via le Pi. Simulation sans --execute.
     Wake {
         name: String,
+        #[arg(long)]
+        execute: bool,
+    },
+    /// Verifie la derniere release GitHub ; --execute l'installe a cote de cet executable.
+    Update {
         #[arg(long)]
         execute: bool,
     },
@@ -197,6 +202,7 @@ fn main() -> Result<()> {
     match cli.cmd {
         Cmd::Status => run_api(&ctx, "status", json!({}))?,
         Cmd::Wake { name, execute } => run_api(&ctx, "wake", json!({"name": name, "execute": execute}))?,
+        Cmd::Update { execute } => run_api(&ctx, "update", json!({"execute": execute}))?,
         Cmd::NetHealth => run_api(&ctx, "net-health", json!({}))?,
         Cmd::AgentKey => run_api(&ctx, "agent-key", json!({}))?,
         Cmd::Keygen { device, vault } => {

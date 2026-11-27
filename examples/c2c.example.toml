@@ -1,0 +1,48 @@
+# Copier en c2c.toml (ignore par git). Aucun secret ici : seulement des references op:// si besoin plus tard.
+[wake]
+pi_user = "pi"
+pi_host = "pi"
+
+[[machine]]
+name = "pc-fixe"
+address = "pc-fixe.example.ts.net"
+mac = "02:00:5E:00:00:01"
+probe_port = 3389
+
+[[machine]]
+name = "portable"
+address = "portable.example.ts.net"
+probe_port = 3389
+
+[[machine]]
+name = "pi"
+address = "pi.example.ts.net"
+probe_port = 22
+
+# --- Streaming (par defaut : parsec). Sunshine : marqueurs CLIENT CONNECTED / CLIENT DISCONNECTED verifies en reel. ---
+# [stream]
+# kind = "sunshine"
+# log_path = 'C:\Program Files\Sunshine\config\sunshine.log'
+# process = "sunshine"
+
+# --- Ecran virtuel en disposition Remote (defaut 1920x1200@60) ---
+# [display]
+# remote_mode = { w = 2560, h = 1600, hz = 60 }
+
+# --- Agent (cote machine pilotee) : ecoute sur l'IP Tailscale UNIQUEMENT. AUCUN secret ni 1Password au demarrage :
+#     il ne connait que les cles PUBLIQUES des appareils autorises et sa propre cle d'identite (generee au premier lancement,
+#     fichier `c2c-agent-hostkey` a cote de cette config, droits restreints a ton compte). `c2c agent-key` affiche sa cle publique.
+# [agent]
+# bind = "100.64.0.10:7443"
+# owner = "ton-compte@exemple.org"   # verifie chaque pair via `tailscale whois`
+# [[agent.client]]
+# name = "portable"
+# pubkey = "<64 caracteres hexadecimaux, affiches par `c2c keygen portable` sur l'appareil>"
+# allowed = ["@common"]              # @read, @common (lecture + courant), @all (avec les actions destructives) ou des noms de droits
+
+# --- Client (cote portable / telephone) : `c2c keygen <appareil>` cree la cle privee DANS le 1Password de l'appareil ---
+# client_name = "portable"      # a placer avant [wake]
+# et dans la machine pilotee :
+#   agent_addr = "pc-fixe.example.ts.net:7443"
+#   key_ref = "op://Homelab/c2c-portable-key/password"   # cle privee de CET appareil, lue seulement quand on se connecte
+#   agent_pubkey = "<cle publique de l'agent, affichee par `c2c agent-key` sur la machine pilotee>"

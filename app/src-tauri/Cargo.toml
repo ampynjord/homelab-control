@@ -1,0 +1,18 @@
+[package]
+name = "c2c-desktop"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+# Hors du workspace principal : Tauri exige la chaine Rust MSVC sous Windows (le workspace tourne aussi en GNU).
+[workspace]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+c2c-api = { path = "../../crates/c2c-api" }
+c2c-core = { path = "../../crates/c2c-core" }

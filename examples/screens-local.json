@@ -1,0 +1,5 @@
+[
+  {"id": "MSI4CE3", "active": true,  "primary": true,  "mode": {"w": 2560, "h": 1440, "hz": 60}, "x": 0,    "y": 0},
+  {"id": "AOC2401", "active": true,  "primary": false, "mode": {"w": 1920, "h": 1080, "hz": 60}, "x": 2560, "y": 104},
+  {"id": "PSCCDD0", "active": false, "primary": false, "mode": {"w": 2560, "h": 1600, "hz": 60}, "x": 4480, "y": 0}
+]

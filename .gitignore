@@ -1,0 +1,7 @@
+target/
+c2c-audit.jsonl
+c2c.toml
+.env
+*.secret
+essai-reel.log
+c2c-health.json

@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+exclude = ["app/src-tauri"]
+members = ["crates/c2c-core", "crates/c2c-api", "crates/c2c-cli", "crates/c2c-windows"]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "MIT"
